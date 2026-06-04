@@ -11,11 +11,8 @@ build/
 venv_quotex/
 venv/
 
-# Dados (muito grandes para o GitHub)
-data/
-
-# Modelos treinados (grandes)
-models/
+# Dados brutos (muito grandes para o GitHub)
+data/raw/
 
 # Logs
 logs/
