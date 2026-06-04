@@ -1,0 +1,35 @@
+{
+  "capital": {
+    "initial": 100.0,
+    "currency": "BRL"
+  },
+  "trading": {
+    "win_rate_target": 0.619,
+    "payout_rate": 0.80,
+    "min_confidence": 0.88,
+    "risk_base_pct": 0.02
+  },
+  "cycles": {
+    "c1": { "name": "🌱 Seed", "target": 500, "tpd": 15, "rp": 2.0, "mg": 2 },
+    "c2": { "name": "🔥 Growth", "target": 3000, "tpd": 12, "rp": 1.5, "mg": 2 },
+    "c3": { "name": "⚡ Scale", "target": 15000, "tpd": 10, "rp": 1.2, "mg": 1 },
+    "c4": { "name": "🏆 Legacy", "target": 50000, "tpd": 8, "rp": 1.0, "mg": 0 }
+  },
+  "exchanges": {
+    "iqoption": { "api_key": "", "demo_mode": true },
+    "quotex": { "api_key": "", "demo_mode": true },
+    "pocketoption": { "api_key": "", "demo_mode": true },
+    "deriv": { "api_key": "", "demo_mode": true }
+  },
+  "soros_mode": {
+    "enabled": true,
+    "min_confidence": 0.92,
+    "multiplier_1": 1.5,
+    "multiplier_2": 2.0,
+    "multiplier_3": 3.0,
+    "min_regime_score": 3
+  },
+  "meta_6m": 50000,
+  "plano": "4 ciclos · 6 meses · R$100→R$50.000",
+  "updated_at": "2026-06-04T15:50:00Z"
+}

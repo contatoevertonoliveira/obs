@@ -1,0 +1,72 @@
+{
+  "version": "2.1",
+  "updated": "2026-06-04T17:45:00Z",
+  "active_setups": [
+    {
+      "symbol": "BTC/USDT",
+      "tf": "1m",
+      "threshold": 0.70,
+      "stake_pct": 0.02,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 30,
+      "enabled": true,
+      "rationale": "75.6% WR backtest. Carro-chefe."
+    },
+    {
+      "symbol": "ETH/USDT",
+      "tf": "5m",
+      "threshold": 0.65,
+      "stake_pct": 0.015,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 15,
+      "enabled": true,
+      "rationale": "70.0% WR backtest. Secundário."
+    },
+    {
+      "symbol": "BTC/USDT",
+      "tf": "3m",
+      "threshold": 0.78,
+      "stake_pct": 0.015,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 10,
+      "enabled": true,
+      "model_type": "call_5",
+      "rationale": "60.9% WR, 69 trades. M3 call_5 (15min forecast)."
+    },
+    {
+      "symbol": "BTC/USDT",
+      "tf": "15m",
+      "threshold": 0.82,
+      "stake_pct": 0.012,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 8,
+      "enabled": true,
+      "model_type": "call_5",
+      "rationale": "61.4% WR (th=0.82) ou 76.2% (th=0.85). M15 call_5."
+    }
+  ],
+  "disabled_setups": [
+    {"symbol": "BTC/USDT", "tf": "5m", "reason": "55.4% WR, quase breakeven"},
+    {"symbol": "BTC/USDT", "tf": "30m", "reason": "31.9% WR"},
+    {"symbol": "ETH/USDT", "tf": "1m", "reason": "53.1% WR"},
+    {"symbol": "ETH/USDT", "tf": "3m", "reason": "42.3% WR (apenas call_5 com 63% mas só 19 trades)"},
+    {"symbol": "ETH/USDT", "tf": "15m", "reason": "41.9% WR"},
+    {"symbol": "ETH/USDT", "tf": "30m", "reason": "30.9% WR"}
+  ],
+  "cycles": [
+    {"name": "Seed", "from": 100, "to": 500, "risk": 0.02, "est_days": 22},
+    {"name": "Growth", "from": 500, "to": 3000, "risk": 0.015, "est_days": 38},
+    {"name": "Scale", "from": 3000, "to": 15000, "risk": 0.012, "est_days": 50},
+    {"name": "Legacy", "from": 15000, "to": 50000, "risk": 0.01, "est_days": 42}
+  ],
+  "payout_rate": 0.80,
+  "sessions": [
+    {"name": "Londres", "utc": "12:00", "days": "Seg-Sex"},
+    {"name": "Nova York", "utc": "17:00", "days": "Seg-Sex"},
+    {"name": "Pré-Ásia", "utc": "23:00", "days": "Seg-Sex"}
+  ]
+}

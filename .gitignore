@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Ambiente
+.env
+venv_quotex/
+venv/
+
+# Dados (muito grandes para o GitHub)
+data/
+
+# Modelos treinados (grandes)
+models/
+
+# Logs
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporários
+*.tmp
+*.log
