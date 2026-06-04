@@ -1,0 +1,174 @@
+{
+  "snapshot": {
+    "version": "2.0",
+    "date": "2026-06-04T21:00:00Z",
+    "project": "Hermes Quant V2",
+    "platform": "Quotex (Conta Demo)",
+    "email": "averdadesemfim@gmail.com",
+    "status": "Pipeline completo. Conexao Quotex bloqueada HTTP 429. Aguardar reset."
+  },
+  "data_collection": {
+    "total_raw_files": 86,
+    "total_raw_candles": 315000,
+    "timeframes": [
+      "M1",
+      "M5",
+      "M15"
+    ],
+    "pairs": {
+      "crypto": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "LTC",
+        "BNB"
+      ],
+      "forex_otc": [
+        "EUR",
+        "JPY",
+        "GBP",
+        "CHF",
+        "CAD"
+      ],
+      "forex_cross": [
+        "EURJPY",
+        "EURGBP",
+        "GBPJPY",
+        "AUDUSD",
+        "NZDUSD",
+        "EURAUD",
+        "EURCAD",
+        "GBPAUD",
+        "GBPCAD",
+        "AUDJPY",
+        "CADJPY",
+        "CHFJPY",
+        "AUDCAD",
+        "BRLUSD"
+      ],
+      "forex_normal": [
+        "EURUSD_N",
+        "GBPUSD_N",
+        "USDJPY_N",
+        "USDCHF_N",
+        "USDCAD_N"
+      ]
+    }
+  },
+  "models": {
+    "total_trained": 299,
+    "viable_threshold_07": 5,
+    "storage_path": "models/quotex_v2/",
+    "format": "XGBoost JSON via joblib"
+  },
+  "viable_setups": [
+    {
+      "name": "BNB_M5_call_5",
+      "asset": "BNBUSD_otc",
+      "tf": "M5",
+      "target": "call_5",
+      "threshold": 0.7,
+      "wr": 69.6,
+      "trades": 23,
+      "exp": 25.2,
+      "stake": 2.0,
+      "martingale": true
+    },
+    {
+      "name": "BRLUSD_M1_put_5",
+      "asset": "BRLUSD_otc",
+      "tf": "M1",
+      "target": "put_5",
+      "threshold": 0.7,
+      "wr": 63.6,
+      "trades": 11,
+      "exp": 14.5,
+      "stake": 1.0,
+      "martingale": false
+    },
+    {
+      "name": "BTC_M15_call_1",
+      "asset": "BTCUSD_otc",
+      "tf": "M15",
+      "target": "call_1",
+      "threshold": 0.7,
+      "wr": 63.2,
+      "trades": 19,
+      "exp": 13.7,
+      "stake": 1.5,
+      "martingale": false
+    },
+    {
+      "name": "GBPJPY_M15_call_5",
+      "asset": "GBPJPY_otc",
+      "tf": "M15",
+      "target": "call_5",
+      "threshold": 0.7,
+      "wr": 62.1,
+      "trades": 66,
+      "exp": 11.8,
+      "stake": 1.5,
+      "martingale": true
+    },
+    {
+      "name": "LTC_M15_call_1",
+      "asset": "LTCUSD_otc",
+      "tf": "M15",
+      "target": "call_1",
+      "threshold": 0.65,
+      "wr": 58.8,
+      "trades": 17,
+      "exp": 5.9,
+      "stake": 1.0,
+      "martingale": false
+    }
+  ],
+  "calibrated_spreads": {
+    "crypto_default": {
+      "call_1": 0.0008,
+      "call_5": 0.002
+    },
+    "file": "config/quotex_spreads.json"
+  },
+  "api_limits": {
+    "M1": "3d ~4300 candles",
+    "M5": "14d ~4032 candles",
+    "M15": "30d ~2880 candles",
+    "max_per_request": 6000
+  },
+  "pipeline": {
+    "1_coleta": "src/collect_quotex_data.py",
+    "2_coleta_extra": "src/collect_more_pairs.py",
+    "3_analise_vol": "src/analyze_volatility.py",
+    "4_process_v2": "src/process_quotex_v2_all.py",
+    "5_train_v2": "src/train_quotex_v2.py",
+    "6_backtest": "src/backtest_quotex_models.py",
+    "7_papertrade": "src/papertrade_quotex.py"
+  },
+  "papertrade": {
+    "script": "src/papertrade_quotex.py",
+    "env_vars": [
+      "QUOTEX_EMAIL",
+      "QUOTEX_PASSWORD"
+    ],
+    "scan_interval_s": 10,
+    "log_dir": "logs/papertrade/",
+    "status": "AGUARDANDO - HTTP 429"
+  },
+  "github": {
+    "repo": "https://github.com/contatoevertonoliveira/obs",
+    "branch": "master",
+    "commits": 2,
+    "files_total": 434
+  },
+  "restore": {
+    "command": "git clone https://github.com/contatoevertonoliveira/obs.git && cd obs && chmod +x restore.sh && ./restore.sh"
+  },
+  "next_steps": [
+    "1. Aguardar reset rate limit Quotex (HTTP 429)",
+    "2. Rodar: source venv_quotex/bin/activate && python3 src/papertrade_quotex.py",
+    "3. Coletar dados diariamente para melhorar modelos",
+    "4. Re-treinar modelos com dados frescos",
+    "5. Expandir para IQOption, PocketOption e Deriv"
+  ]
+}
