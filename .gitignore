@@ -8,7 +8,11 @@ build/
 
 # Ambiente
 .env
+config/exchanges.env
 venv_quotex/
+venv_pocket/
+venv_iqoption/
+venv_deriv/
 venv/
 
 # Logs

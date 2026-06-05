@@ -18,7 +18,10 @@ aviso() { echo -e "${COR_AMARELO}[AVISO]${COR_RESET} $1"; }
 erro()  { echo -e "${COR_VERMELHO}[ERRO]${COR_RESET} $1"; }
 
 PROJETO_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_DIR="$PROJETO_DIR/venv_quotex"
+VENV_QUOTEX="$PROJETO_DIR/venv_quotex"
+VENV_POCKET="$PROJETO_DIR/venv_pocket"
+VENV_IQ="$PROJETO_DIR/venv_iqoption"
+VENV_DERIV="$PROJETO_DIR/venv_deriv"
 
 echo ""
 echo "╔═══════════════════════════════════════════════════╗"
@@ -48,32 +51,53 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
-# ─── 2. CRIAR VENV ───
-info "Criando ambiente virtual..."
-if [ -d "$VENV_DIR" ]; then
-    aviso "venv já existe, recriando..."
-    rm -rf "$VENV_DIR"
-fi
+# ─── 2. CRIAR VENVs ───
+criar_venv() {
+    local nome=$1
+    local dir=$2
+    info "Criando $nome..."
+    if [ -d "$dir" ]; then
+        aviso "$nome ja existe, recriando..."
+        rm -rf "$dir"
+    fi
+    $PYTHON_CMD -m venv "$dir"
+    ok "$nome criado em $dir"
+}
 
-$PYTHON_CMD -m venv "$VENV_DIR"
-source "$VENV_DIR/bin/activate"
-ok "venv criada em $VENV_DIR"
+criar_venv "venv_quotex" "$VENV_QUOTEX"
+criar_venv "venv_pocket" "$VENV_POCKET"
+criar_venv "venv_iqoption" "$VENV_IQ"
+criar_venv "venv_deriv" "$VENV_DERIV"
 
-# ─── 3. ATUALIZAR PIP ───
-info "Atualizando pip..."
-pip install --upgrade pip -q
-ok "pip atualizado"
+# ─── 3. INSTALAR DEPENDÊNCIAS ───
+instalar_deps() {
+    local nome=$1
+    local dir=$2
+    shift 2
+    info "Instalando dependencias: $nome..."
+    source "$dir/bin/activate"
+    pip install --upgrade pip -q
+    pip install $@ -q
+    deactivate
+    ok "$nome: dependencias instaladas"
+}
 
-# ─── 4. INSTALAR DEPENDÊNCIAS ───
-info "Instalando dependências..."
-if [ -f "$PROJETO_DIR/requirements.txt" ]; then
-    pip install -r "$PROJETO_DIR/requirements.txt" -q
-    ok "Dependências instaladas"
-else
-    aviso "requirements.txt não encontrado, instalando manualmente..."
-    pip install xgboost pandas numpy ta joblib scikit-learn pyquotex -q
-    ok "Dependências instaladas manualmente"
-fi
+# Quotex
+instalar_deps "Quotex" "$VENV_QUOTEX" \
+    xgboost pandas numpy ta joblib scikit-learn pyquotex
+
+# PocketOption (ByJhonesDev)
+instalar_deps "PocketOption" "$VENV_POCKET" \
+    pandas numpy \
+    "git+https://github.com/ByJhonesDev/PocketOptionAPI.git"
+
+# IQOption (Lu-Yi-Hsun)
+instalar_deps "IQOption" "$VENV_IQ" \
+    "git+https://github.com/Lu-Yi-Hsun/iqoptionapi.git"
+
+# Deriv (WebSocket direto)
+instalar_deps "Deriv" "$VENV_DERIV" \
+    websockets pandas numpy
 
 # ─── 5. VERIFICAR ESTRUTURA ───
 info "Verificando estrutura do projeto..."
@@ -106,7 +130,12 @@ check_file "src/papertrade_quotex.py"
 check_file "src/train_quotex_v2.py"
 check_file "src/process_quotex_v2_all.py"
 check_file "src/collect_quotex_data.py"
+check_file "src/quotex_integration.py"
+check_file "src/pocketoption_integration.py"
+check_file "src/iqoption_integration.py"
+check_file "src/deriv_integration.py"
 check_file "config/quotex_spreads.json"
+check_file "config/exchanges.env"
 check_file "backup_snapshot.json"
 check_dir  "models/quotex_v2"
 check_dir  "data/processed/quotex_v2"
@@ -142,22 +171,24 @@ echo "╔═══════════════════════�
 echo "║   🚀 PRÓXIMOS PASSOS                            ║"
 echo "╚═══════════════════════════════════════════════════╝"
 echo ""
-echo "  1️⃣  Ativar ambiente:"
-echo "      source $VENV_DIR/bin/activate"
+echo "  🔧  Antes de tudo, configure as credenciais:"
+echo "      nano config/exchanges.env"
 echo ""
-echo "  2️⃣  Configurar credenciais Quotex:"
-echo "      export QUOTEX_EMAIL=\"seu@email.com\""
-echo "      export QUOTEX_PASSWORD=\"sua_senha\""
-echo ""
-echo "  3️⃣  Rodar paper trade:"
+echo "  📌  QUOTEX (paper trade ativo):"
+echo "      source $VENV_QUOTEX/bin/activate"
 echo "      python3 src/papertrade_quotex.py"
 echo ""
-echo "  4️⃣  Coletar mais dados (opcional):"
-echo "      python3 src/collect_quotex_data.py"
+echo "  📌  POCKETOPTION (SSID do navegador):"
+echo "      source $VENV_POCKET/bin/activate"
+echo "      python3 -c \"from src.pocketoption_integration import PocketIntegration; ...\""
 echo ""
-echo "  5️⃣  Re-treinar modelos (opcional):"
-echo "      python3 src/process_quotex_v2_all.py"
-echo "      python3 src/train_quotex_v2.py"
+echo "  📌  IQOPTION (preencher senha no .env):"
+echo "      source $VENV_IQ/bin/activate"
+echo "      python3 -c \"from src.iqoption_integration import IQIntegration; ...\""
+echo ""
+echo "  📌  DERIV (token em app.deriv.com):"
+echo "      source $VENV_DERIV/bin/activate"
+echo "      python3 -c \"from src.deriv_integration import DerivIntegration; ...\""
 echo ""
 echo "  📊  Snapshot completo: backup_snapshot.json"
 echo "  📘  Documentação:     README.md"
