@@ -30,14 +30,29 @@ from src.market_regime import classify_regime, RegimeFilter
 # 1. CARREGAR MODELOS
 # ═══════════════════════════════════════════════════════════
 
-def load_models(symbol, tf):
-    """Carrega modelos XGBoost treinados."""
+def load_models(symbol, tf, exchange="binance"):
+    """Carrega modelos XGBoost treinados para uma exchange específica."""
     label = TF_LABEL.get(tf, tf)
+    # Exchange-specific model directory
+    model_root = MODEL_DIR
+    if exchange not in ("binance", None):
+        model_root = os.path.join(MODEL_DIR, exchange)
+    
     models = {}
     for target in ["call_1", "put_1", "call_5", "put_5"]:
-        path = os.path.join(MODEL_DIR, f"{symbol.replace('/', '_')}_{label}_{target}_xgb.json")
+        # Try flat directory first (models/quotex/BTC_M1_call_1_xgb.json)
+        path = os.path.join(model_root, f"{symbol.replace('/', '_')}_{label}_{target}_xgb.json")
         if os.path.exists(path):
             models[target] = joblib.load(path)
+            continue
+        
+        # Try V2 directory structure (models/quotex_v2/SYMBOL_TF/{target}.json)
+        v2_dir = os.path.join(model_root + "_v2" if not model_root.endswith("_v2") else model_root,
+                             f"{symbol.replace('/', '_')}_{label}")
+        v2_path = os.path.join(v2_dir, f"{target.replace('_', '')}.json")
+        if os.path.exists(v2_path):
+            models[target] = joblib.load(v2_path)
+    
     return models
 
 
@@ -50,10 +65,13 @@ def load_latest_data(symbol, tf):
     return pd.read_parquet(path)
 
 
-def load_mrd_cache(symbol, tf):
-    """Carrega tabela de performance MRD."""
+def load_mrd_cache(symbol, tf, exchange="binance"):
+    """Carrega tabela de performance MRD para uma exchange específica."""
     label = TF_LABEL.get(tf, tf)
-    path = os.path.join(MODEL_DIR, f"{symbol.replace('/', '_')}_{label}_regime_perf.json")
+    model_root = MODEL_DIR
+    if exchange not in ("binance", None):
+        model_root = os.path.join(MODEL_DIR, exchange)
+    path = os.path.join(model_root, f"{symbol.replace('/', '_')}_{label}_regime_perf.json")
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
@@ -151,7 +169,7 @@ def build_calibration(symbol, tf, model_key="call_1"):
 # 3. GERADOR DE SINAIS COM MRD
 # ═══════════════════════════════════════════════════════════
 
-def generate_signals(symbol, tf, min_prob=0.65, use_mrd=True):
+def generate_signals(symbol, tf, min_prob=0.65, use_mrd=True, exchange="binance"):
     """
     Gera sinais CALL/PUT com filtros:
       1. Modelo XGBoost → probabilidade
@@ -166,7 +184,7 @@ def generate_signals(symbol, tf, min_prob=0.65, use_mrd=True):
 
     # 1. Carregar dados e modelos
     df = load_latest_data(symbol, tf)
-    models = load_models(symbol, tf)
+    models = load_models(symbol, tf, exchange=exchange)
 
     if df is None or not models:
         return [], "sem dados ou modelos"
@@ -213,7 +231,7 @@ def generate_signals(symbol, tf, min_prob=0.65, use_mrd=True):
             if use_mrd:
                 regime = classify_regime(df)
                 regime_name = regime["regime"]
-                perf = load_mrd_cache(symbol, tf)
+                perf = load_mrd_cache(symbol, tf, exchange=exchange)
 
                 if perf is not None:
                     reg_perf = {r["regime"]: r for r in perf}

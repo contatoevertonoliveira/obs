@@ -1,61 +1,114 @@
 {
-  "version": "2.1",
-  "updated": "2026-06-04T17:45:00Z",
+  "version": "2.2",
+  "updated": "2026-06-06T20:00:00Z",
   "active_setups": [
     {
       "symbol": "BTC/USDT",
       "tf": "1m",
+      "exchange": "binance",
       "threshold": 0.70,
       "stake_pct": 0.02,
       "martingale_mult": [1.0, 2.5, 6.0],
       "max_mg_consecutive": 2,
       "max_daily_trades": 30,
       "enabled": true,
-      "rationale": "75.6% WR backtest. Carro-chefe."
+      "rationale": "75.6% WR backtest. Carro-chefe Binance."
     },
     {
       "symbol": "ETH/USDT",
       "tf": "5m",
+      "exchange": "binance",
       "threshold": 0.65,
       "stake_pct": 0.015,
       "martingale_mult": [1.0, 2.5, 6.0],
       "max_mg_consecutive": 2,
       "max_daily_trades": 15,
       "enabled": true,
-      "rationale": "70.0% WR backtest. Secundário."
+      "rationale": "70.0% WR backtest. Secundário Binance."
     },
     {
-      "symbol": "BTC/USDT",
-      "tf": "3m",
-      "threshold": 0.78,
-      "stake_pct": 0.015,
+      "symbol": "BNB/USDT",
+      "tf": "5m",
+      "exchange": "quotex",
+      "asset": "BNBUSD_otc",
+      "model_type": "call_5",
+      "threshold": 0.70,
+      "stake_pct": 0.02,
       "martingale_mult": [1.0, 2.5, 6.0],
       "max_mg_consecutive": 2,
-      "max_daily_trades": 10,
-      "enabled": true,
-      "model_type": "call_5",
-      "rationale": "60.9% WR, 69 trades. M3 call_5 (15min forecast)."
+      "max_daily_trades": 15,
+      "enabled": false,
+      "rationale": "69.6% WR V2. Melhor modelo geral. MG ligado."
+    },
+    {
+      "symbol": "USD/BRL",
+      "tf": "1m",
+      "exchange": "quotex",
+      "asset": "BRLUSD_otc",
+      "model_type": "put_5",
+      "threshold": 0.70,
+      "stake_pct": 0.01,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 20,
+      "enabled": false,
+      "rationale": "63.6% WR V2. M1 put_5, sem MG (entradas rápidas)."
     },
     {
       "symbol": "BTC/USDT",
       "tf": "15m",
-      "threshold": 0.82,
-      "stake_pct": 0.012,
+      "exchange": "quotex",
+      "asset": "BTCUSD_otc",
+      "model_type": "call_1",
+      "threshold": 0.70,
+      "stake_pct": 0.015,
       "martingale_mult": [1.0, 2.5, 6.0],
       "max_mg_consecutive": 2,
       "max_daily_trades": 8,
-      "enabled": true,
+      "enabled": false,
+      "rationale": "63.2% WR V2. BTC M15 call_1 (1 candle)."
+    },
+    {
+      "symbol": "GBP/JPY",
+      "tf": "15m",
+      "exchange": "quotex",
+      "asset": "GBPJPY_otc",
       "model_type": "call_5",
-      "rationale": "61.4% WR (th=0.82) ou 76.2% (th=0.85). M15 call_5."
+      "threshold": 0.70,
+      "stake_pct": 0.015,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 8,
+      "enabled": false,
+      "rationale": "62.1% WR V2. 66 trades validação. Forex cross."
+    },
+    {
+      "symbol": "LTC/USDT",
+      "tf": "15m",
+      "exchange": "quotex",
+      "asset": "LTCUSD_otc",
+      "model_type": "call_1",
+      "threshold": 0.65,
+      "stake_pct": 0.01,
+      "martingale_mult": [1.0, 2.5, 6.0],
+      "max_mg_consecutive": 2,
+      "max_daily_trades": 8,
+      "enabled": false,
+      "rationale": "58.8% WR V2. Threshold mais baixo (0.65)."
     }
   ],
   "disabled_setups": [
-    {"symbol": "BTC/USDT", "tf": "5m", "reason": "55.4% WR, quase breakeven"},
-    {"symbol": "BTC/USDT", "tf": "30m", "reason": "31.9% WR"},
-    {"symbol": "ETH/USDT", "tf": "1m", "reason": "53.1% WR"},
-    {"symbol": "ETH/USDT", "tf": "3m", "reason": "42.3% WR (apenas call_5 com 63% mas só 19 trades)"},
-    {"symbol": "ETH/USDT", "tf": "15m", "reason": "41.9% WR"},
-    {"symbol": "ETH/USDT", "tf": "30m", "reason": "30.9% WR"}
+    {"symbol": "BTC/USDT", "tf": "3m", "exchange": "binance", "reason": "60.9% WR mas só 69 trades - amostra pequena"},
+    {"symbol": "BTC/USDT", "tf": "15m", "exchange": "binance", "reason": "61.4% WR Binance mas Quotex BTC M15 call_1 é melhor (63.2%)"},
+    {"symbol": "BTC/USDT", "tf": "5m", "exchange": "binance", "reason": "55.4% WR, breakeven"},
+    {"symbol": "BTC/USDT", "tf": "30m", "exchange": "binance", "reason": "31.9% WR"},
+    {"symbol": "ETH/USDT", "tf": "1m", "exchange": "binance", "reason": "53.1% WR"},
+    {"symbol": "ETH/USDT", "tf": "3m", "exchange": "binance", "reason": "42.3% WR"},
+    {"symbol": "ETH/USDT", "tf": "15m", "exchange": "binance", "reason": "41.9% WR"},
+    {"symbol": "ETH/USDT", "tf": "30m", "exchange": "binance", "reason": "30.9% WR"},
+    {"symbol": "EUR/USD", "tf": "any", "exchange": "quotex", "reason": "Nenhum forex major produziu modelo viável no V2"},
+    {"symbol": "GBP/USD", "tf": "any", "exchange": "quotex", "reason": "Nenhum forex major viável"},
+    {"symbol": "USD/JPY", "tf": "any", "exchange": "quotex", "reason": "Nenhum forex major viável"}
   ],
   "cycles": [
     {"name": "Seed", "from": 100, "to": 500, "risk": 0.02, "est_days": 22},
@@ -65,8 +118,8 @@
   ],
   "payout_rate": 0.80,
   "sessions": [
-    {"name": "Londres", "utc": "12:00", "days": "Seg-Sex"},
-    {"name": "Nova York", "utc": "17:00", "days": "Seg-Sex"},
-    {"name": "Pré-Ásia", "utc": "23:00", "days": "Seg-Sex"}
+    {"name": "Londres", "utc": "12:00", "days": "Seg-Sex", "setups": ["BTC_1m", "ETH_5m", "BNB_5m", "BRLUSD_1m", "BTC_15m", "GBPJPY_15m", "LTC_15m"]},
+    {"name": "Nova York", "utc": "17:00", "days": "Seg-Sex", "setups": ["BTC_1m", "ETH_5m", "BNB_5m", "BRLUSD_1m", "BTC_15m", "GBPJPY_15m", "LTC_15m"]},
+    {"name": "Pré-Ásia", "utc": "23:00", "days": "Seg-Sex", "setups": ["BTC_1m", "ETH_5m", "BNB_5m", "BRLUSD_1m", "BTC_15m", "GBPJPY_15m", "LTC_15m"]}
   ]
 }

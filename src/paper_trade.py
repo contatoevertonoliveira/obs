@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-HERMES QUANT V2 — PAPER TRADE SYSTEM v2.0
+HERMES QUANT V2 — PAPER TRADE SYSTEM v2.1
 ===========================================
-Apenas setups vencedores: BTC M1 + ETH M5
+Multi-exchange paper trading com 5 modelos viáveis (V2 Quotex) + Binance.
 Martingale real com níveis 1.0x → 2.5x → 6.0x
 
 Uso:
-  python3 src/paper_trade.py scan      → Escaneia e executa trades
-  python3 src/paper_trade.py status    → Status da conta
-  python3 src/paper_trade.py history   → Últimos trades
-  python3 src/paper_trade.py reset     → Reseta conta
+  python3 src/paper_trade.py scan           → Escaneia e executa trades
+  python3 src/paper_trade.py status         → Status da conta
+  python3 src/paper_trade.py history        → Últimos trades
+  python3 src/paper_trade.py reset          → Reseta conta
+  python3 src/paper_trade.py projections    → Metas dos ciclos
 """
 import os, sys, json, time
 from datetime import datetime, timezone
@@ -26,6 +27,12 @@ from src.signal_engine import generate_signals
 # ═══════════════════════════════════════════════════════
 CONFIG_FILE = "config/active_setups.json"
 PAPER_FILE = os.path.join(MODEL_DIR, "paper_trade.json")
+
+# Map exchange name → model directory
+EXCHANGE_MODEL_DIRS = {
+    "binance": "models",
+    "quotex": "models/quotex",
+}
 
 def load_config():
     with open(CONFIG_FILE) as f:
@@ -54,7 +61,7 @@ def load_account():
         "worst_streak": 0,
         "cycle": 1,
         "cycle_target": config["cycles"][0]["to"],
-        "martingale": {},  # per-setup: { "BTC_1m": {"active": false, "level": 0, "consecutive_losses": 0} }
+        "martingale": {},  # per-setup: { "BNB_5m": {"active": false, "level": 0, "consecutive_losses": 0} }
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -139,20 +146,15 @@ def update_mg_state(account, setup_key, won, max_consecutive):
 # SIMULAÇÃO DE RESULTADO (baseada na confiança)
 # ═══════════════════════════════════════════════════════
 
-def simulate_result(confidence, actual_result=None):
+def simulate_result(confidence, model_wr=None):
     """
-    Simula resultado baseado na confiança calibrada (backtest BTC M1 + ETH M5).
+    Simula resultado baseado na confiança calibrada.
     
-    Calibração:
-      Conf >= 0.88 → 62-76% WR (backtest)
-      Conf >= 0.85 → 57-62% WR
-      Conf >= 0.80 → 55-57% WR
-      Conf >= 0.75 → 53-55% WR
-      Conf >= 0.70 → 51-53% WR
-      Conf < 0.70  → 50% WR (aleatório)
+    Usa win rate específico do modelo quando disponível (V2 Quotex),
+    ou a calibração genérica quando não (Binance fallback).
     """
-    if actual_result is not None:
-        return actual_result
+    if model_wr is not None:
+        return random.random() < model_wr
     
     if confidence >= 0.88:
         win_prob = 0.65
@@ -170,11 +172,11 @@ def simulate_result(confidence, actual_result=None):
     return random.random() < win_prob
 
 # ═══════════════════════════════════════════════════════
-# SCAN DE SINAIS
+# SCAN DE SINAIS (multi-exchange)
 # ═══════════════════════════════════════════════════════
 
 def scan_trades(account):
-    """Escaneia sinais com martingale real."""
+    """Escaneia sinais com martingale real — multi-exchange + 5 modelos."""
     config = load_config()
     
     print("─" * 60)
@@ -192,6 +194,7 @@ def scan_trades(account):
         
         symbol = setup["symbol"]
         tf = setup["tf"]
+        exchange = setup.get("exchange", "binance")
         threshold = setup["threshold"]
         stake_pct = setup["stake_pct"]
         mg_mult = setup["martingale_mult"]
@@ -206,8 +209,8 @@ def scan_trades(account):
         
         mg_state = account["martingale"][setup_key]
         
-        # Gerar sinais
-        signals, msg = generate_signals(symbol, tf, min_prob=threshold)
+        # Gerar sinais (passa exchange para carregar modelo correto)
+        signals, msg = generate_signals(symbol, tf, exchange=exchange, min_prob=threshold)
         
         if not signals:
             continue
@@ -234,8 +237,9 @@ def scan_trades(account):
             mg_level_before = mg_state["level"] if mg_state["active"] else 0
             mg_active_before = mg_state["active"]
             
-            # Simular resultado
-            won = simulate_result(sig["confidence"])
+            # Simular resultado com WR específico do modelo se disponível
+            model_wr = setup.get("backtest_wr", None)
+            won = simulate_result(sig["confidence"], model_wr)
             
             profit = round(stake * PAYOUT_RATE, 2) if won else -stake
             account["balance"] = round(account["balance"] + profit, 2)
@@ -260,6 +264,7 @@ def scan_trades(account):
                 "datetime": datetime.now(timezone.utc).isoformat(),
                 "symbol": symbol,
                 "timeframe": tf,
+                "exchange": exchange,
                 "type": sig["type"],
                 "confidence": round(sig["confidence"], 4),
                 "regime": sig.get("regime", "?"),
@@ -277,7 +282,8 @@ def scan_trades(account):
             mg_icon = "⚡" if mg_active_before else "  "
             conf_str = f"{sig['confidence']:.1%}"
             
-            print(f"  {icon}{mg_icon} {symbol.split('/')[0]:6s} {tf:4s} "
+            exchange_tag = f"[{exchange[:3].upper()}]" if exchange != "binance" else "    "
+            print(f"  {icon}{mg_icon} {exchange_tag} {symbol.split('/')[0]:6s} {tf:4s} "
                   f"{sig['type']:4s} {conf_str} "
                   f"R$ {stake:>5.2f} {'+R$' + str(round(profit,2)) if won else '-R$' + str(round(-profit,2)):>8s} "
                   f"R$ {account['balance']:.2f}",
@@ -331,6 +337,12 @@ def show_status(account):
     mg_wins = sum(1 for t in mg_trades if t["won"])
     mg_wr = mg_wins / len(mg_trades) if mg_trades else 0
     
+    # Stats por exchange
+    binance_trades = [t for t in account["trades"] if t.get("exchange", "binance") == "binance"]
+    quotex_trades = [t for t in account["trades"] if t.get("exchange") == "quotex"]
+    binance_wr = sum(1 for t in binance_trades if t["won"]) / len(binance_trades) if binance_trades else 0
+    quotex_wr = sum(1 for t in quotex_trades if t["won"]) / len(quotex_trades) if quotex_trades else 0
+    
     print("═" * 60)
     print(f"  📊 HERMES QUANT V2 — PAPER TRADE STATUS")
     print("═" * 60)
@@ -347,6 +359,13 @@ def show_status(account):
     print(f"  Avg P&L:      R$ {avg_profit:.2f}")
     print(f"  Best streak:  {account['best_streak']}")
     print(f"  Worst streak: {account['worst_streak']}")
+    
+    # Stats por exchange
+    if binance_trades:
+        print(f"\n  🔵 Binance: {len(binance_trades)} trades | WR {binance_wr:.1%}")
+    if quotex_trades:
+        print(f"\n  🟢 Quotex:  {len(quotex_trades)} trades | WR {quotex_wr:.1%}")
+    
     print(f"\n  ⚡ Martingale:")
     print(f"  Trades MG:    {len(mg_trades)} ({mg_wins} wins, {len(mg_trades)-mg_wins} losses)")
     print(f"  MG Win Rate:  {mg_wr:.1%}")
@@ -356,8 +375,9 @@ def show_status(account):
             continue
         key = f"{setup['symbol'].split('/')[0]}_{setup['tf']}"
         mg = account["martingale"].get(key, {})
+        ex = setup.get("exchange", "binance")[:3].upper()
         mg_status = f"⚡ Nível {mg.get('level', 0)}" if mg.get("active") else "● Normal"
-        print(f"  {setup['symbol'].split('/')[0]:6s} {setup['tf']:4s} | "
+        print(f"  [{ex}] {setup['symbol'].split('/')[0]:6s} {setup['tf']:4s} | "
               f"Threshold >{setup['threshold']:.0%} | "
               f"Stake {setup['stake_pct']:.1%} | {mg_status}")
     print("═" * 60)
@@ -367,13 +387,14 @@ def show_history(account, limit=10):
     print("─" * 60)
     print(f"  📜 ÚLTIMAS {len(trades)} TRADES")
     print("─" * 60)
-    print(f"  {'#':>4s} {'Ativo':6s} {'Tipo':4s} {'Conf':5s} {'Stake':>7s} {'Result':>8s} {'MG':>3s} {'Saldo':>8s}")
-    print(f"  {'─' * 48}")
+    print(f"  {'#':>4s} {'Ex':3s} {'Ativo':6s} {'Tipo':4s} {'Conf':5s} {'Stake':>7s} {'Result':>8s} {'MG':>3s} {'Saldo':>8s}")
+    print(f"  {'─' * 52}")
     for t in trades:
         icon = "✅" if t["won"] else "❌"
         pf_str = f"+R$ {t['profit']:.2f}" if t["won"] else f"-R$ {-t['profit']:.2f}"
         mg_str = f"L{t.get('mg_level', 0)}" if t.get("mg_active") else "  "
-        print(f"  {t['id']:>4d} {t['symbol'].split('/')[0]:6s} {t['type']:4s} "
+        ex = t.get("exchange", "binance")[:3].upper()
+        print(f"  {t['id']:>4d} {ex:3s} {t['symbol'].split('/')[0]:6s} {t['type']:4s} "
               f"{t['confidence']:.0%} R$ {t['stake']:>5.2f} {pf_str:>8s} {mg_str:>3s}")
     print("─" * 60)
     # Resumo
@@ -390,8 +411,22 @@ def show_projections():
         print(f"  🔄 {c['name']:8s} R$ {c['from']:>5,.0f} → R$ {c['to']:>6,.0f} | "
               f"Risco {c['risk']:.1%} | ~{c['est_days']} dias")
     total_days = sum(c["est_days"] for c in config["cycles"])
-    print(f"\n  🏆 Total: ~{total_days} dias | R$ {config['cycles'][0]['from']:.0f} → R$ {config['cycles'][-1]['to']:,.0f}")
+    max_goal = config["cycles"][-1]["to"]
+    print(f"\n  🏆 Total: ~{total_days} dias | R$ {config['cycles'][0]['from']:.0f} → R$ {max_goal:,.0f}")
     print("─" * 60)
+    # 5 modelos viáveis
+    print("\n  📋 MODELOS VIÁVEIS (V2 Quotex)")
+    print("─" * 40)
+    print(f"  {'Ativo':8s} {'TF':4s} {'Tipo':6s} {'WR':6s} {'MG':4s}")
+    models_viaveis = [
+        ("BNB", "M5", "call_5", "69.6%", "✅"),
+        ("BRLUSD", "M1", "put_5", "63.6%", "❌"),
+        ("BTC", "M15", "call_1", "63.2%", "❌"),
+        ("GBPJPY", "M15", "call_5", "62.1%", "✅"),
+        ("LTC", "M15", "call_1", "58.8%", "❌"),
+    ]
+    for ativo, tf, tipo, wr, mg in models_viaveis:
+        print(f"  {ativo:8s} {tf:4s} {tipo:6s} {wr:6s} {mg:4s}")
 
 def reset_account():
     account = load_account()
